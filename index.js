@@ -14,22 +14,16 @@ app.use(morgan('tiny'))
 
 
 app.get('/', (request, response) => {
-    response.send('<h1>This is the backend!</h1>')
+  response.send('<h1>This is the backend!</h1>')
 })
 
 app.get('/api/persons', (request, response) => {
-    Person
-      .find({})
-      .then(persons => {
-        console.log(persons)
-        response.json(persons)
-      })
-})
-
-app.get('/info', (request, response) => {
-    response.send(
-      `<p>Phonebook has info for ${persons.length}<p>
-      <p>${new Date().toString()}<p>`)
+  Person
+    .find({})
+    .then(persons => {
+      console.log(persons)
+      response.json(persons)
+    })
 })
 
 app.get('/api/persons/:id', (request, response, next) => {
@@ -48,20 +42,13 @@ app.get('/api/persons/:id', (request, response, next) => {
 app.delete('/api/persons/:id', (request, response, next) => {
   Person
     .findByIdAndRemove(request.params.id)
-    .then(result => {
+    .then(() => {
       response.status(204).end()
     })
     .catch(error => next(error))
 })
 
-const generateId = () => {
-  const maxId = persons.length > 0
-    ? Math.max(...persons.map(n => n.id))
-    : 0
-  return maxId + 1
-}
-
-app.post('/api/persons', (request, response) => {
+app.post('/api/persons', (request, response, next) => {
   const body = request.body
 
   if (!body.name || !body.number) {
@@ -71,12 +58,12 @@ app.post('/api/persons', (request, response) => {
   }
 
   Person
-  .find({ name: body.name })
-  .then(name => {
-    return response.status(400).json({
-      error: 'name already exists in local storage'
+    .find({ name: body.name })
+    .then(() => {
+      return response.status(400).json({
+        error: 'name already exists in local storage'
+      })
     })
-  })
 
   const person = new Person({
     name: body.name,
@@ -88,11 +75,12 @@ app.post('/api/persons', (request, response) => {
     .then(savedPerson => {
       response.json(savedPerson)
     })
+    .catch(error => next(error))
 })
 
 const PORT = process.env.PORT
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`)
+  console.log(`Server running on port ${PORT}`)
 })
 
 const unknownEndpoint = (request, response) => {
@@ -106,6 +94,8 @@ const errorHandler = (error, request, response, next) => {
 
   if (error.name === 'CastError') {
     return response.status(400).send({ error: 'id format cannot be read by mongo identifier' })
+  } else if(error.name === 'ValidationError') {
+    return response.status(400).json({ error: error.message })
   }
 
   next(error)
